@@ -434,7 +434,7 @@ public class SchemaTransaction extends IndexableTransaction {
 
     public boolean syncDelete() {
         return this.params().configuration()
-                            .get( CoreOptions.SCHEMA_SYNC_DELETION);
+                            .get(CoreOptions.SCHEMA_SYNC_DELETION);
     }
 
     @Watched(prefix = "schema")
