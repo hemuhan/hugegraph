@@ -23,13 +23,11 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.util.CloseableIterator;
 
-import com.baidu.hugegraph.HugeException;
 import com.baidu.hugegraph.HugeGraph;
 import com.baidu.hugegraph.HugeGraphParams;
 import com.baidu.hugegraph.backend.BackendException;
@@ -433,7 +431,8 @@ public class SchemaTransaction extends IndexableTransaction {
     }
 
     public boolean syncDelete() {
-        return this.params().configuration().get(CoreOptions.SYNC_DELETION);
+        return this.params().configuration()
+                            .get(CoreOptions.TASK_SYNC_DELETION);
     }
 
     @Watched(prefix = "schema")
@@ -526,7 +525,7 @@ public class SchemaTransaction extends IndexableTransaction {
                                                .dependencies(dependencies);
         HugeTask<?> task = builder.schedule();
 
-        // If SYNC_DELETION is true, wait async thread done before
+        // If TASK_SYNC_DELETION is true, wait async thread done before
         // continue. This is used when running tests.
         if (sync) {
             task.syncWait();
