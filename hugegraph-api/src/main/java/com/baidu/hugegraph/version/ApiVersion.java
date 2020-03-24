@@ -101,7 +101,7 @@ public final class ApiVersion {
      * [0.50] Issue-746: Support userdata for index label
      * [0.51] Issue-929: Support 5 TP RESTful API
      * [0.52] Issue-781: Support range query for rest api like P.gt(18)
-     * [0.53] Issue-295: Support ttl for edge label
+     * [0.53] Issue-295: Support ttl
      */
 
     // The second parameter of Version.of() is for IDE running without JAR
