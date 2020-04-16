@@ -73,6 +73,7 @@ import com.baidu.hugegraph.task.TaskManager;
 import com.baidu.hugegraph.task.TaskScheduler;
 import com.baidu.hugegraph.type.HugeType;
 import com.baidu.hugegraph.type.define.GraphMode;
+import com.baidu.hugegraph.util.DateUtil;
 import com.baidu.hugegraph.util.E;
 import com.baidu.hugegraph.util.LockUtil;
 import com.baidu.hugegraph.util.Log;
@@ -688,6 +689,11 @@ public class StandardHugeGraph implements HugeGraph {
         this.params.graph(graph);
     }
 
+    @Override
+    public long now() {
+        return ((TinkerpopTransaction) this.tx()).txTime();
+    }
+
     private class StandardHugeGraphParams implements HugeGraphParams {
 
         private HugeGraph graph = StandardHugeGraph.this;
@@ -789,6 +795,8 @@ public class StandardHugeGraph implements HugeGraph {
         private final AtomicInteger refs;
         // Flag opened of each thread
         private final ThreadLocal<Boolean> opened;
+        // Last time check flag opened of each thread
+        private final ThreadLocal<Long> lastCheckOpenedTime;
         // Backend transactions
         private final ThreadLocal<Txs> transactions;
 
@@ -797,6 +805,8 @@ public class StandardHugeGraph implements HugeGraph {
 
             this.refs = new AtomicInteger();
             this.opened = ThreadLocal.withInitial(() -> false);
+            this.lastCheckOpenedTime = ThreadLocal.withInitial(
+                                       () -> DateUtil.now().getTime());
             this.transactions = ThreadLocal.withInitial(() -> null);
         }
 
@@ -841,6 +851,7 @@ public class StandardHugeGraph implements HugeGraph {
 
         @Override
         public boolean isOpen() {
+            this.lastCheckOpenedTime.set(DateUtil.now().getTime());
             return this.opened.get();
         }
 
@@ -878,6 +889,10 @@ public class StandardHugeGraph implements HugeGraph {
         public String toString() {
             return String.format("TinkerpopTransaction{opened=%s, txs=%s}",
                                  this.opened.get(), this.transactions.get());
+        }
+
+        public long txTime() {
+            return this.lastCheckOpenedTime.get();
         }
 
         private void verifyOpened() {
