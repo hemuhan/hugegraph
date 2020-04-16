@@ -77,6 +77,8 @@ public interface BackendEntry extends Idfiable {
 
     public Id subId();
 
+    public long ttl();
+
     public int columnsSize();
     public Collection<BackendColumn> columns();
 
