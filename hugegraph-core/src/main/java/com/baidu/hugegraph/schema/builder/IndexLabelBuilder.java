@@ -91,6 +91,7 @@ public class IndexLabelBuilder implements IndexLabel.Builder {
         SchemaLabel schemaLabel = this.loadElement();
         indexLabel.baseValue(schemaLabel.id());
         indexLabel.indexType(this.indexType);
+        indexLabel.ttl(schemaLabel.ttl());
         for (String field : this.indexFields) {
             PropertyKey propertyKey = this.transaction.getPropertyKey(field);
             indexLabel.indexField(propertyKey.id());
