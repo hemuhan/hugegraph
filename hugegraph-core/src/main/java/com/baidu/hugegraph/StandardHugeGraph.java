@@ -691,7 +691,7 @@ public class StandardHugeGraph implements HugeGraph {
 
     @Override
     public long now() {
-        return ((TinkerpopTransaction) this.tx()).txTime();
+        return ((TinkerpopTransaction) this.tx()).openedTime();
     }
 
     private class StandardHugeGraphParams implements HugeGraphParams {
@@ -795,8 +795,6 @@ public class StandardHugeGraph implements HugeGraph {
         private final AtomicInteger refs;
         // Flag opened of each thread
         private final ThreadLocal<Boolean> opened;
-        // Last time check flag opened of each thread
-        private final ThreadLocal<Long> lastCheckOpenedTime;
         // Backend transactions
         private final ThreadLocal<Txs> transactions;
 
@@ -805,8 +803,6 @@ public class StandardHugeGraph implements HugeGraph {
 
             this.refs = new AtomicInteger();
             this.opened = ThreadLocal.withInitial(() -> false);
-            this.lastCheckOpenedTime = ThreadLocal.withInitial(
-                                       () -> DateUtil.now().getTime());
             this.transactions = ThreadLocal.withInitial(() -> null);
         }
 
@@ -851,7 +847,6 @@ public class StandardHugeGraph implements HugeGraph {
 
         @Override
         public boolean isOpen() {
-            this.lastCheckOpenedTime.set(DateUtil.now().getTime());
             return this.opened.get();
         }
 
@@ -891,8 +886,8 @@ public class StandardHugeGraph implements HugeGraph {
                                  this.opened.get(), this.transactions.get());
         }
 
-        public long txTime() {
-            return this.lastCheckOpenedTime.get();
+        public long openedTime() {
+            return this.transactions.get().openedTime();
         }
 
         private void verifyOpened() {
@@ -911,6 +906,7 @@ public class StandardHugeGraph implements HugeGraph {
             // The backend tx may be reused, here just set a flag
             assert this.opened.get() == false;
             this.opened.set(true);
+            this.transactions.get().openedTime(DateUtil.now().getTime());
             this.refs.incrementAndGet();
         }
 
@@ -971,6 +967,7 @@ public class StandardHugeGraph implements HugeGraph {
         private final SchemaTransaction schemaTx;
         private final SysTransaction systemTx;
         private final GraphTransaction graphTx;
+        private long openedTime;
 
         public Txs(SchemaTransaction schemaTx, SysTransaction systemTx,
                    GraphTransaction graphTx) {
@@ -978,6 +975,7 @@ public class StandardHugeGraph implements HugeGraph {
             this.schemaTx = schemaTx;
             this.systemTx = systemTx;
             this.graphTx = graphTx;
+            this.openedTime = DateUtil.now().getTime();
         }
 
         public void commit() {
@@ -1006,6 +1004,14 @@ public class StandardHugeGraph implements HugeGraph {
             } catch (Exception e) {
                 LOG.error("Failed to close SchemaTransaction", e);
             }
+        }
+
+        public void openedTime(long time) {
+            this.openedTime = time;
+        }
+
+        public long openedTime() {
+            return this.openedTime;
         }
 
         @Override
