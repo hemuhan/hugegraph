@@ -403,7 +403,7 @@ public abstract class MysqlTable
             }
             if (query.paging()) {
                 this.wrapPage(selection, query, false);
-                wrapLimit(selection, query);
+                this.wrapLimit(selection, query);
             } else if (!query.nolimit() || query.offset() > 0) {
                 this.wrapOffset(selection, query);
             }
@@ -420,7 +420,7 @@ public abstract class MysqlTable
         Shard shard = (Shard) scan.value();
 
         String page = query.page();
-        if (MysqlShardSpliter.END.equals(shard.start()) &&
+        if (MysqlShardSpliter.START.equals(shard.start()) &&
             MysqlShardSpliter.END.equals(shard.end()) &&
             (page == null || page.isEmpty())) {
             this.wrapLimit(select, query);
@@ -431,7 +431,7 @@ public abstract class MysqlTable
 
         if (page != null && !page.isEmpty()) {
             // >= page
-            wrapPage(select, query, true);
+            this.wrapPage(select, query, true);
             // < end
             WhereBuilder where = this.newWhereBuilder(false);
             if (!MysqlShardSpliter.END.equals(shard.end())) {
@@ -443,7 +443,7 @@ public abstract class MysqlTable
             // >= start
             WhereBuilder where = this.newWhereBuilder();
             boolean hasStart = false;
-            if (!MysqlShardSpliter.END.equals(shard.start())) {
+            if (!MysqlShardSpliter.START.equals(shard.start())) {
                 where.gte(formatKey(partitionKey), shard.start());
                 hasStart = true;
             }
@@ -621,12 +621,12 @@ public abstract class MysqlTable
     }
 
     private void wrapLimit(StringBuilder select, Query query) {
+        select.append(this.orderByKeys());
         if (!query.nolimit()) {
             // Fetch `limit + 1` rows for judging whether reached the last page
             select.append(" limit ");
             select.append(query.limit() + 1);
         }
-        select.append(this.orderByKeys());
         select.append(";");
     }
 
@@ -689,7 +689,7 @@ public abstract class MysqlTable
                             "The split-size must be >= %s bytes, but got %s",
                             MIN_SHARD_SIZE, splitSize);
             List<Shard> splits = new ArrayList<>(COUNT);
-            splits.add(new Shard(END, BASE64.substring(0, 1), 0));
+            splits.add(new Shard(START, BASE64.substring(0, 1), 0));
             for (int i = 0; i < COUNT - 1; i++) {
                 splits.add(new Shard(BASE64.substring(i, i + 1),
                                      BASE64.substring(i + 1, i + 2), 0));
